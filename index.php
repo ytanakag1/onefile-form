@@ -1,133 +1,93 @@
-<?php
-session_start();
+<?php   //06_php/object/hikarineo.php
 
-  class hikariNeo{
-    public $post = [];
-    public $token;
+class neoExa{
+	public $post = [] ; //一応配列として初期化しておく
 
-    public function viewForm($id){
-      $this->token = $this->token();
-      include_once 'view-form.php';
-    }
+	public function viewForm(){
+		//送信画面の始まり
+		include_once 'inc-array.php';
+		include_once 'view-form.php';
+	}
 
-    public function showPost($p){
-      $rental = '';
-      foreach($p as $key=>$val ){
-        if( is_array($val) ){
-          //checkBox
-          foreach($val as $k => $v )
-            $rental .= $v .',';
-          
-          echo '<li>', $key ,' : ' , $rental;
-          $this->post[$key] = htmlspecialchars( $rental ,ENT_QUOTES);
-          
-        }else{
-          $this->post[$key] = htmlspecialchars( $val ,ENT_QUOTES);
-          echo '<li>' , $key ,' : ' ,$this->post[$key] ;
-        }
+	public function showPost(){
+	//確認画面
+		include_once 'inc-array.php';
+
+		foreach ($_POST as $key => $value){
+		// ↑ これをループしてサニタイズ htmlspecialchars() して表示する
+			// var_dump( $input_name[$key] );
+			if( isset($input_name[$key]) ){ 
+				echo "<h3> $input_name[$key]</h3>";
+			}else{
+				//キーがなければスキップ
+				continue ;
+			} 
+
+
+			if(is_array($value)){
+				//checkBoxなら
+				foreach ($value as $k => $val){
+					$post[$key][$k] = htmlspecialchars($val,ENT_QUOTES);
+					echo '<p>', $post[$key][$k];
+				}
+				
+			}else{
+				$post[$key] = htmlspecialchars($value,ENT_QUOTES);
+				echo '<p>', $post[$key];
+			}
+		} //roop END
+
+		$this->post = $post; //クラス変数に渡す
+
+		echo '<form method="post">
+			<input id="form_regist" type="button" name="button" value="送信">
+			</form> <div id="prd"> <!--ここに見積もり結果--> </div>';
+	}  // 確認画面 END
+
+}  
+// END class
+
+	$neo = new neoExa(); //インスタンス作成
+	
+	if( !empty($_POST['btn']) && $_POST['btn']=='確認' ){
+		//確認画面
+		$neo->showPost();
+
+
+	}elseif( !empty($_POST['btn']) && $_POST['btn']=='送信'){
+		//post送信してないので今回はここは書きません
+
+	}else{
+		//送信画面の始まり
+
+			$neo->viewForm(); 
+
+	} //送信画面の終わり
+
+?>
+
+
+<style>label{display:block}.pr{position:relative;}.pa{position:absolute;}.nic_maisu{top: 25px;
+left: 142px;}</style>
+
+
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script>
+				//	↓ json形式 
+	var post = '<?= json_encode($neo->post)?>';
+	console.log(post);
+
+	$("#form_regist").on("click", function () {
+    $.ajax({
+      url: 'ajaxtest.php',
+      type: "POST",
+      dataType: "html",
+      data:{shohin: post },
+      success: function (res) {
+        $('#prd').html(res);
+        console.log(res);
       }
-    }
+    });
+  });
 
-
-    public function mailPost($p){
-      $rental = '';
-        foreach($p as $key=>$val ){
-          if( is_array($val) ){
-            //checkBox
-            foreach($val as $k => $v )
-              $rental .= $v .',';
-            
-            $this->post[$key] = htmlspecialchars( $rental ,ENT_QUOTES);
-            
-          }else{
-            $this->post[$key] = htmlspecialchars( $val ,ENT_QUOTES);
-          }
-        }
-        $to = '********@gmail.com';
-        $subject='お申し込み';
-        $body = implode("\n",$this->post);
-        $from = '';
-        $success = mail($to,$subject,$body);
-
-        if( $success) 
-          echo '<p>お申し込み受け付けました｡';
-          $_SESSION['token']=null;
-          $this->post = [];
-    }
-
-
-
-    // トークン作成のための関数
-    public static function token($length = 20){  	
-      return substr(str_shuffle('1234567890QWERTYUIOPLKJHGFDSAZXCVBNMabcdefghijklmnopqrstuvwxyz'), 0, $length);
-    }
-
-  }
-// end class
-
-//常時読み込まれてる
-  $id = hikariNeo::token(8);
-  $fm = new hikariNeo();
-
-?>
-
-  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-
-<?php
-
-  if( isset($_POST['plan'],$_POST['id'],$_POST['token'],$_POST['button']) 
-  && $_POST['token'] == $_SESSION['token'][$_POST['id']] 
-  &&  $_POST['button'] == '確認へ' ){
-    /*
-      確認画面
-      second
-    */
-?>
-
-  <div id="second_input">
-  <style> form{ display:inline}</style>
-   <h3>確認してください</h3>
-    <?= $fm -> showPost($_POST); ?>
-    <div>
-      <button type="button" onclick="prev()">戻る</button>
-      <form method="post"><input id="form_regist" type="button" name="button" value="送信"></form>
-    </div>
-  </div> <!--second-->
-  <div id="results"></div>
- 
-  <script>
-<?php  include 'form_regist.js.php';?>
-  </script>
-
-
-
-
-<?php
-  }elseif( !empty( $_POST['button']) && $_POST['button'] == '送信' ){
-   /*
-     third 送信がおされてる
-   */
-   
-    $fm -> mailPost($_POST);
-?>
-  <div id="results"></div>
-
-
-
-
-<?php
-  }else{
-    /*
-      first 未送信
-    */
-    $_SESSION['token']=null;
-    $fm ->viewForm($id);
-    $_SESSION['token'][$id] = $fm->token;
-?>
-
-  <div id="results"></div>
-  <script src="form_submit.js"></script>
-<?php
-
-  }
-
+</script>

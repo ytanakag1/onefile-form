@@ -1,3 +1,4 @@
+<script>
 $('.first_input').hide();
    
    function prev(){
@@ -27,3 +28,4 @@ $('.first_input').hide();
           $("#results").text("エラーが発生しました。ステータス：" + jqXHR.status);
         });
     });
+</script>   
